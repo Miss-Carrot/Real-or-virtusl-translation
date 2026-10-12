@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research &amp; technology (translation)</title>
+<link rel="icon" type="image/png" sizes="48x48" href="favicon.png">
+<style>
+  :root{
+    --bg:#0f1116;
+    --card:#1a1d27;
+    --border:#2b2f3a;
+    --text:#e8e9ee;
+    --muted:#9aa0ad;
+    --accent:#5b8def;
+    --green:#2fbf71;
+    --green-bg:#12321f;
+    --green-text:#c9f6dc;
+    --red:#e6534a;
+    --red-bg:#3a1616;
+    --red-text:#ffd0cc;
+    --input-bg:#12141b;
+  }
+  html[data-theme="light"]{
+    --bg:#f4f5f8;
+    --card:#ffffff;
+    --border:#dfe2ea;
+    --text:#1b1d24;
+    --muted:#6b7180;
+    --accent:#3763d6;
+    --green:#1f9d5c;
+    --green-bg:#e4f8ec;
+    --green-text:#0f5c33;
+    --red:#d63c33;
+    --red-bg:#fdeceb;
+    --red-text:#8a231c;
+    --input-bg:#f9f9fb;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:24px 16px 60px;
+    transition:background .2s, color .2s;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+  h1{text-align:center;font-size:1.5rem;margin-bottom:4px;}
+  .sub{text-align:center;color:var(--muted);font-size:0.9rem;margin-bottom:20px;}
+  .top-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:5;
+    border-bottom:1px solid var(--border);margin-bottom:16px;
+  }
+  #timer{
+    font-size:1.3rem;font-weight:700;padding:6px 14px;border-radius:8px;
+    background:var(--card);border:1px solid var(--border);min-width:80px;text-align:center;
+  }
+  #timer.warn{color:var(--red);border-color:var(--red);}
+  #score{font-size:1rem;color:var(--muted);}
+  #theme-toggle{
+    background:var(--card);color:var(--text);border:1px solid var(--border);
+    padding:6px 12px;border-radius:8px;font-size:0.85rem;cursor:pointer;
+  }
+  .item{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px;margin-bottom:10px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  }
+  .ru{flex:1 1 260px;font-size:1rem;}
+  input.answer{
+    flex:1 1 240px;padding:9px 12px;border-radius:8px;border:1px solid var(--border);
+    background:var(--input-bg);color:var(--text);font-size:0.95rem;outline:none;
+    font-family:inherit;transition:background .15s,border-color .15s;
+  }
+  input.answer:focus{border-color:var(--accent);}
+  input.answer.correct{background:var(--green-bg);border-color:var(--green);color:var(--green-text);}
+  input.answer.incorrect{background:var(--red-bg);border-color:var(--red);color:var(--red-text);}
+  input.answer:disabled{opacity:0.8;}
+  /* Correct-answer text exists in the markup for reference but is never shown to the learner */
+  .reveal{display:none !important;}
+  #check-btn{
+    display:block;width:100%;background:var(--accent);color:#fff;border:none;
+    padding:13px 18px;border-radius:10px;font-size:1rem;font-weight:600;
+    cursor:pointer;margin-top:16px;
+  }
+  #check-btn:hover{opacity:0.9;}
+  #check-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  #finish-overlay{
+    display:none;position:fixed;inset:0;background:rgba(10,11,15,0.55);
+    align-items:center;justify-content:center;z-index:20;
+  }
+  #finish-box{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:28px 30px;text-align:center;max-width:340px;color:var(--text);
+  }
+  #finish-emoji{font-size:3rem;line-height:1;margin-bottom:6px;}
+  #finish-box h2{margin-top:0;margin-bottom:4px;}
+  #finish-box p{color:var(--muted);}
+  button.primary{
+    background:var(--accent);color:#fff;border:none;padding:10px 24px;
+    border-radius:8px;font-size:0.95rem;cursor:pointer;margin-top:10px;
+  }
+  button.primary:hover{opacity:0.9;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Research &amp; technology (translation)</h1>
+  <p class="sub">Type the English equivalent of each Russian expression, then press Check. You have 5 minutes.</p>
+
+  <div class="top-bar">
+    <div id="timer">05:00</div>
+    <div id="score">0 / 20 correct</div>
+    <button id="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+  </div>
+
+  <div id="quiz"></div>
+  <button id="check-btn" onclick="checkAll()">Check</button>
+</div>
+
+<div id="finish-overlay">
+  <div id="finish-box">
+    <div id="finish-emoji">🔌</div>
+    <h2 id="finish-title">Time's up!</h2>
+    <p id="final-score"></p>
+    <button class="primary" onclick="document.getElementById('finish-overlay').style.display='none'">OK</button>
+  </div>
+</div>
+
+<script>
+const baseData = [
+  { ru: "Проводить исследование", answers: ["to conduct research", "to do research"] },
+  { ru: "Стирать грань между реальностью и вымыслом", answers: ["to blur the line between reality and fiction"] },
+  { ru: "Внедрять / принимать автоматизацию", answers: ["to embrace automation"] },
+  { ru: "Цифровой кочевник", answers: ["a digital nomad"] },
+  { ru: "Интерпретировать / анализировать данные", answers: ["to interpret data"] },
+  { ru: "Приблизительная оценка", answers: ["a rough estimate"] },
+  { ru: "Оптимизировать задачи", answers: ["to streamline tasks"] },
+  { ru: "Потерять счёт времени", answers: ["to lose track of time"] },
+  { ru: "Упустить из виду закономерность", answers: ["to overlook a pattern"] },
+  { ru: "Предвидеть", answers: ["to foresee"] },
+  { ru: "Проводить эксперименты", answers: ["to carry out experiments"] },
+  { ru: "Полностью погрузиться в...", answers: ["to get fully absorbed by"] },
+  { ru: "Вызывать опасения насчёт конфиденциальности", answers: ["to raise privacy concerns"] },
+  { ru: "Разбирать сложные идеи на простые составляющие", answers: ["to break down complex ideas"] },
+  { ru: "Остерегаться / проявлять осторожность к...", answers: ["be wary of", "wary of"] },
+  { ru: "Заметить / выявить закономерность", answers: ["to spot a pattern"] },
+  { ru: "Делать выводы", answers: ["to draw conclusions"] },
+  { ru: "Совершить прорыв", answers: ["to make a breakthrough"] },
+  { ru: "Новаторский / революционный / прорывной", answers: ["groundbreaking"] },
+  { ru: "Опубликовать результаты исследования (или выводы / открытия)", answers: ["to publish findings"] }
+];
+
+// Fisher-Yates shuffle: new order on every page load
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const data = shuffle(baseData);
+
+const scoreMessages = {
+  20: ["🌌", "Galactic perfection!"],
+  19: ["🧬", "Pure genius!"],
+  18: ["🔬", "Impressive precision!"],
+  17: ["📡", "Strong signal received!"],
+  16: ["🛰️", "Right on target!"],
+  15: ["🧪", "Great results!"],
+  14: ["🔆", "Bright ideas!"],
+  13: ["📈", "Trending upward!"],
+  12: ["🗺️", "Charting your course!"],
+  11: ["⚙️", "Well-oiled progress!"],
+  10: ["🔭", "Getting clearer!"],
+  9:  ["🚏", "Finding your way!"],
+  8:  ["🕰️", "Time well spent!"],
+  7:  ["📝", "Taking good notes!"],
+  6:  ["🏗️", "Solid foundations!"],
+  5:  ["🔋", "Charging up!"],
+  4:  ["🌫️", "Still a bit blurry!"],
+  3:  ["🪫", "Running low — recharge!"],
+  2:  ["🧰", "Time to tinker!"],
+  1:  ["🔍", "Keep investigating!"],
+  0:  ["🔌", "Reboot and retry!"]
+};
+
+// Contractions are expanded, punctuation is dropped, the particle "to" and the
+// articles a / an / the are ignored, so all those variations compare equal.
+function normalize(str){
+  let s = str.toLowerCase().replace(/[’‘]/g, "'");
+  s = s.replace(/\bwon't\b/g, "will not")
+       .replace(/\bcan't\b/g, "can not")
+       .replace(/n't\b/g, " not")
+       .replace(/'ll\b/g, " will")
+       .replace(/'d\b/g, " would")
+       .replace(/'ve\b/g, " have")
+       .replace(/'re\b/g, " are")
+       .replace(/'m\b/g, " am");
+  s = s.replace(/[.,!?;:"()']/g, "");
+  s = s.replace(/\s+/g, " ").trim();
+  s = s.replace(/^to\s+/, "");
+  s = s.replace(/\b(a|an|the)\b/g, "");
+  return s.replace(/\s+/g, " ").trim();
+}
+
+const quizEl = document.getElementById("quiz");
+let correctCount = 0;
+let timeLeft = 300; // 5 minutes
+let timerId = null;
+const inputs = [];
+
+data.forEach((item, idx) => {
+  const row = document.createElement("div");
+  row.className = "item";
+
+  const ru = document.createElement("div");
+  ru.className = "ru";
+  ru.textContent = (idx + 1) + ". " + item.ru;
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "answer";
+  input.autocomplete = "off";
+  input.autocapitalize = "off";
+  input.spellcheck = false;
+  input.placeholder = "Type in English...";
+
+  // Kept in the DOM for reference, hidden from the learner via CSS
+  const reveal = document.createElement("div");
+  reveal.className = "reveal";
+  reveal.textContent = "Correct answer: " + item.answers.join(" / ");
+
+  // No live validation: colours appear only after Check / when time runs out
+  input.addEventListener("input", () => input.classList.remove("correct", "incorrect"));
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter"){
+      e.preventDefault();
+      const next = inputs[idx + 1];
+      if (next) next.input.focus();
+    }
+  });
+
+  row.appendChild(ru);
+  row.appendChild(input);
+  row.appendChild(reveal);
+  quizEl.appendChild(row);
+  inputs.push({ input, item });
+});
+
+function checkAll(){
+  let count = 0;
+  inputs.forEach(({ input, item }) => {
+    const typed = normalize(input.value);
+    if (typed === ""){
+      input.classList.remove("correct", "incorrect");
+      return;
+    }
+    const ok = item.answers.some(a => normalize(a) === typed);
+    if (ok) count++;
+    input.classList.toggle("correct", ok);
+    input.classList.toggle("incorrect", !ok);
+  });
+  correctCount = count;
+  document.getElementById("score").textContent = correctCount + " / " + data.length + " correct";
+}
+
+function formatTime(t){
+  const m = Math.floor(t / 60).toString().padStart(2, "0");
+  const s = (t % 60).toString().padStart(2, "0");
+  return m + ":" + s;
+}
+
+function tick(){
+  timeLeft--;
+  const timerEl = document.getElementById("timer");
+  timerEl.textContent = formatTime(Math.max(timeLeft, 0));
+  if (timeLeft <= 10) timerEl.classList.add("warn");
+  if (timeLeft <= 0){
+    clearInterval(timerId);
+    endQuiz();
+  }
+}
+
+function endQuiz(){
+  checkAll();
+  // Unanswered fields are marked red at the end so students see what they missed
+  inputs.forEach(({ input }) => {
+    if (input.value.trim() === "") input.classList.add("incorrect");
+    input.disabled = true;
+  });
+  document.getElementById("check-btn").disabled = true;
+
+  const [emoji, message] = scoreMessages[correctCount] || scoreMessages[0];
+  document.getElementById("finish-emoji").textContent = emoji;
+  document.getElementById("finish-title").textContent = message;
+  document.getElementById("final-score").textContent =
+    "You got " + correctCount + " out of " + data.length + " correct.";
+  document.getElementById("finish-overlay").style.display = "flex";
+}
+
+function toggleTheme(){
+  const html = document.documentElement;
+  const btn = document.getElementById("theme-toggle");
+  if (html.getAttribute("data-theme") === "light"){
+    html.removeAttribute("data-theme");
+    btn.textContent = "☀ Light";
+  } else {
+    html.setAttribute("data-theme", "light");
+    btn.textContent = "🌙 Dark";
+  }
+}
+
+timerId = setInterval(tick, 1000);
+</script>
+</body>
+</html>
